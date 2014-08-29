@@ -1,0 +1,25 @@
+{
+	"name"       : "milkyway-multimedia/ss-events-handler",
+	"description": "A simple events dispatcher for Silverstripe, with events that can be started via YAML config",
+	"type"       : "silverstripe-module",
+	"keywords"   : [
+		"silverstripe",
+		"utilities",
+		"mwm",
+		"events"
+	],
+	"license"    : "MIT",
+	"authors"    : [
+		{
+			"name" : "Mellisa Hankins",
+			"email": "mell@milkywaymultimedia.com.au"
+		}
+	],
+	"require"    : {
+		"silverstripe/framework"            : "~3.1",
+		"milkyway-multimedia/events-handler": "dev-master"
+	},
+	"extra"      : {
+		"installer-name": "events-handler"
+	}
+}
