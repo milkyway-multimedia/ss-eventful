@@ -1,7 +1,5 @@
 <?php namespace Milkyway\SS;
 
-use Milkyway\Events\Manager;
-
 /**
  * Milkyway Multimedia
  * EventDispatcher.php
@@ -17,7 +15,7 @@ class EventDispatcher {
 
     public static function inst() {
         if(!static::$singleton)
-            static::$singleton = \Injector::inst()->createWithArgs(__CLASS__, array(new Manager()));
+            static::$singleton = \Injector::inst()->createWithArgs(__CLASS__, array(singleton('Milkyway\Events\Manager')));
 
         return static::$singleton;
     }
@@ -26,7 +24,7 @@ class EventDispatcher {
         return \Config::inst()->forClass('EventDispatcher');
     }
 
-    public function __construct(Manager $manager) {
+    public function __construct($manager) {
         $this->manager = $manager;
     }
 
@@ -71,8 +69,12 @@ class EventDispatcher {
         }
     }
 
-    public static function __callStatic($name, $args = []) {
-        if(method_exists(static::inst(), $name))
-            return call_user_func_array(array(static::inst(), $name), $args);
+    public function __call($fn, $args = array()) {
+        if(method_exists($this->manager, $fn))
+            return call_user_func_array(array($this->manager, $fn), $args);
+        else {
+            $class = __CLASS__;
+            throw new Exception("Object->__call(): the method '$fn' does not exist on '$class'", 2175);
+        }
     }
 } 
