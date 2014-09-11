@@ -1,0 +1,7 @@
+---
+Name: events-handler--injector
+---
+Injector:
+  Milkyway\SS\Events\Dispatcher:
+    constructor:
+      0: %$League\Event\PriorityEmitter

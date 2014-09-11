@@ -1,4 +1,4 @@
 <?php
 
 // Boot up initial events
-\Milkyway\SS\EventDispatcher::inst()->boot();
+Injector::inst()->get('Milkyway\SS\Events\Dispatcher')->boot();
