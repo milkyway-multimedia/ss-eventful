@@ -26,7 +26,7 @@ class Dispatcher {
         if(static::config()->disable_default_listeners)
             return;
 
-        $disabled = (array) static::config()->disabled_namespaces;
+        $disabled = (array) static::config()->disable_default_namespaces;
         $events = (array) static::config()->events;
 
         if(count($events)) {
@@ -82,12 +82,15 @@ class Dispatcher {
 		}
 	}
 
-	public function fire($namespace, $hooks) {
-		$hooks = (array) $hooks;
+	public function fire() {
+		$args = func_get_args();
+
+		$namespace = array_shift($args);
+		$hooks = (array)array_shift($args);
 		$events = [];
 
 		foreach($hooks as $hook) {
-			$events[] = $this->addNamespaceToHook($hook, $namespace);
+			$events[$this->addNamespaceToHook($hook, $namespace)] = $args;
 		}
 
 		$this->emitter->emitBatch($events);
