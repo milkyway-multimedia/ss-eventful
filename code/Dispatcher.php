@@ -13,6 +13,7 @@ use League\Event\PriorityEmitter;
 
 class Dispatcher {
     protected $emitter;
+    protected $_booted = false;
 
     public static function config() {
         return \Config::inst()->forClass('EventDispatcher');
@@ -23,11 +24,11 @@ class Dispatcher {
     }
 
     public function boot() {
-        if(static::config()->disable_default_listeners)
+        if(static::config()->disable_default_listeners || $this->_booted)
             return;
 
         $disabled = (array) static::config()->disable_default_namespaces;
-        $events = (array) static::config()->events;
+        $events = (array) static::config()->listeners;
 
         if(count($events)) {
             foreach($events as $namespace => $listeners) {
@@ -67,6 +68,8 @@ class Dispatcher {
                 }
             }
         }
+
+        $this->_booted = true;
     }
 
 	public function listen($namespace, $hooks, $listener, $once = false, $priority = PriorityEmitter::P_NORMAL) {
@@ -74,26 +77,26 @@ class Dispatcher {
 
 		foreach($hooks as $hook) {
 			$event = $this->addNamespaceToHook($hook, $namespace);
+            $hookListener = is_callable($listener) ? $listener : [$listener, $hook];
 
 			if($once)
-				$this->emitter->addOneTimeListener($event, $listener, $priority);
+				$this->emitter()->addOneTimeListener($event, $hookListener, $priority);
 			else
-				$this->emitter->addListener($event, $listener, $priority);
+				$this->emitter()->addListener($event, $hookListener, $priority);
 		}
 	}
 
 	public function fire() {
+        $this->boot();
+
 		$args = func_get_args();
 
 		$namespace = array_shift($args);
 		$hooks = (array)array_shift($args);
-		$events = [];
 
 		foreach($hooks as $hook) {
-			$events[$this->addNamespaceToHook($hook, $namespace)] = $args;
+			call_user_func_array([$this->emitter(), 'emit'], array_merge(array($this->addNamespaceToHook($hook, $namespace)), $args));
 		}
-
-		$this->emitter->emitBatch($events);
 	}
 
 	public function emitter() {
