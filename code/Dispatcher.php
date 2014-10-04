@@ -96,6 +96,7 @@ class Dispatcher {
 
 		foreach($hooks as $hook) {
 			call_user_func_array([$this->emitter(), 'emit'], array_merge(array($this->addNamespaceToHook($hook, $namespace)), $args));
+			call_user_func_array([$this->emitter(), 'emit'], array_merge(array('*'), [$args]));
 		}
 	}
 
