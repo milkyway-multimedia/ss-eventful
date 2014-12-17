@@ -1,5 +1,5 @@
 {
-	"name"       : "milkyway-multimedia/ss-events-handler",
+	"name"       : "milkyway-multimedia/ss-eventful",
 	"description": "A simple events dispatcher for Silverstripe, with events that can be started via YAML config",
 	"type"       : "silverstripe-module",
 	"keywords"   : [
@@ -17,9 +17,12 @@
 	],
 	"require"    : {
 		"silverstripe/framework"            : "~3.1",
-		"league/event": "~1"
+		"league/event": "~2"
 	},
 	"extra"      : {
-		"installer-name": "events-handler"
+		"installer-name": "eventful"
+	},
+	"replace": {
+		"milkyway-multimedia/ss-events-handler": "*"
 	}
 }

@@ -1,8 +1,8 @@
-Events Handler
+Silverstripe Eventful
 ======
-**Events Handler** is a simple event dispatcher for Silverstripe, that can be configured via YAML config
+**Silverstripe Eventful** is a simple event dispatcher for Silverstripe, that can be configured via YAML config. It is used to manage domain/application events on a more global scale than the extension system provided by Silverstripe.
 
-It is pretty much a wrapper around the "league/event" package by thephpleague, so all credit goes to them
+It is pretty much a wrapper around the "league/event" package by thephpleague, so all credit goes to them.
 
 ## Credit
 The League of extraordinary packages - thephpleague.com
@@ -13,7 +13,7 @@ Add the following to your composer.json file
 ```
 
     "require"          : {
-		"milkyway-multimedia/ss-events-handler": "dev-master"
+		"milkyway-multimedia/ss-eventful": "dev-master"
 	}
 
 ```
