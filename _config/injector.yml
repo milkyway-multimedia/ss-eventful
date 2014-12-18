@@ -2,6 +2,10 @@
 Name: events-handler--injector
 ---
 Injector:
-  Milkyway\SS\Events\Dispatcher:
+  Eventful:
+    class: 'Milkyway\SS\Eventful\Contract'
+
+  'Milkyway\SS\Eventful\Contract':
+    class: 'Milkyway\SS\Eventful\Dispatcher'
     constructor:
-      0: %$League\Event\PriorityEmitter
+      0: '%$League\Event\Emitter'

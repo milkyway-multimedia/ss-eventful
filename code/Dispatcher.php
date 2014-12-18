@@ -1,26 +1,23 @@
-<?php namespace Milkyway\SS\Events;
+<?php namespace Milkyway\SS\Eventful;
 
 use League\Event\EmitterInterface;
-use League\Event\PriorityEmitter;
+use League\Event\EventInterface;
+use League\Event\ListenerInterface;
 
 /**
  * Milkyway Multimedia
- * Dispatcher.php
+ * Milkyway\SS\Eventful\Dispatcher.php
  *
- * @package milkyway-multimedia/ss-events-handler
+ * @package milkyway-multimedia/ss-eventful
  * @author Mellisa Hankins <mell@milkywaymultimedia.com.au>
  */
 
-class Dispatcher {
+class Dispatcher implements Contract {
     protected $emitter;
 	protected $configKey = 'Eventful';
 
     private $_booted = [];
 	private $_allBooted = false;
-
-    public function config() {
-        return \Config::inst()->forClass($this->configKey);
-    }
 
     public function __construct(EmitterInterface $emitter, $configKey = 'Eventful') {
         $this->emitter = $emitter;
@@ -31,7 +28,7 @@ class Dispatcher {
 		$events = (array) $events;
 
 		foreach($events as $event) {
-            $eventListener = is_callable($listener) || $listener instanceof ListenerInterface ? $listener : [$listener, end(explode('.',$event))];
+            $eventListener = is_callable($listener) || ($listener instanceof ListenerInterface) ? $listener : [$listener, end(explode('.',$event))];
 
 			if($once)
 				$this->emitter->addOneTimeListener($event, $eventListener, $priority);
@@ -41,14 +38,21 @@ class Dispatcher {
 	}
 
 	public function fire() {
+		$fired = [];
 		$args = func_get_args();
 
 		$events = (array)array_shift($args);
 
 		foreach($events as $event) {
-			$this->boot($event);
-			call_user_func_array([$this->emitter, 'emit'], array_merge([$event], $args));
+			$eventName = ($event instanceof EventInterface) ? $event->getName() : $event;
+
+			if($this->isDisabled($eventName)) continue;
+
+			$this->boot($eventName);
+			$fired[] = call_user_func_array([$this->emitter, 'emit'], array_merge([$event], $args));
 		}
+
+		return $fired;
 	}
 
     public function __call($fn, $args = []) {
@@ -60,14 +64,13 @@ class Dispatcher {
         }
     }
 
-	protected function addNamespaceToHook($hook, $namespace = '') {
-		return trim($namespace) ? "$namespace.$hook" : $hook;
+	protected function config() {
+		return \Config::inst()->forClass($this->configKey);
 	}
 
 	protected function boot($event = '') {
 		if($this->isBooted($event)) return;
 
-		$disabled = (array) $this->config()->disable_default_namespaces;
 		$listens = (array) $this->config()->listeners;
 
 		if($event && isset($listens[$event])) {
@@ -90,7 +93,7 @@ class Dispatcher {
 	protected function bootEvent($event, $listeners = []) {
 		foreach($listeners as $listener => $options) {
 			$once = false;
-			$priority = PriorityEmitter::P_LOW;
+			$priority = EmitterInterface::P_LOW;
 
 			if (is_array($options)) {
 				$once  = isset($options['first_time_only']);
@@ -107,14 +110,33 @@ class Dispatcher {
 				$listener = $options;
 			}
 
+			$listenerClass = is_array($listener) ? array_shift($listener) : $listener;
+
+			if(in_array($listenerClass, (array)$this->config()->disabled_listeners))
+				continue;
+
 			if (is_array($listener)) {
-				$injectListener = array_shift($listener);
-				$listener       = [\Injector::inst()->create($injectListener)] + $listener;
-			} else {
+				$listener = [\Injector::inst()->create($listenerClass)] + $listener;
+			}
+			else {
 				$listener = \Injector::inst()->create($listener);
 			}
 
 			$this->listen($event, $listener, $once, $priority);
 		}
+	}
+
+	protected function isDisabled($event = '') {
+		list($namespace, $hook) = explode('.', $event);
+
+		if(!$event) {
+			$hook = $namespace;
+			$namespace = '';
+		}
+
+		return !$event
+		|| ($namespace && in_array($namespace, (array)$this->config()->disabled_namespaces))
+		|| (in_array($event, (array)$this->config()->disabled_events))
+		|| (in_array($hook, (array)$this->config()->disabled_hooks));
 	}
 } 
