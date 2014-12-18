@@ -1,11 +1,8 @@
 ---
-Name: events-handler--injector
+Name: eventful--injector
 ---
 Injector:
   Eventful:
-    class: 'Milkyway\SS\Eventful\Contract'
-
-  'Milkyway\SS\Eventful\Contract':
     class: 'Milkyway\SS\Eventful\Dispatcher'
     constructor:
       0: '%$League\Event\Emitter'
