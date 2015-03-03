@@ -25,10 +25,17 @@ class Dispatcher implements Contract {
     }
 
 	public function listen($events, $listener, $once = false, $priority = EmitterInterface::P_NORMAL) {
-		$events = (array) $events;
+		if(!is_array($events))
+			$events = [$events];
 
 		foreach($events as $event) {
-            $eventListener = is_callable($listener) || ($listener instanceof ListenerInterface) ? $listener : [$listener, end(explode('.',$event))];
+			if(is_callable($listener) || ($listener instanceof ListenerInterface))
+				$eventListener = $listener;
+			else {
+				$listenerFn = explode('.',$event);
+				$listenerFn = array_pop($listenerFn);
+				$eventListener = [$listener, $listenerFn];
+			}
 
 			if($once)
 				$this->emitter->addOneTimeListener($event, $eventListener, $priority);
@@ -41,7 +48,10 @@ class Dispatcher implements Contract {
 		$fired = [];
 		$args = func_get_args();
 
-		$events = (array)array_shift($args);
+		$events = array_shift($args);
+
+		if(!is_array($events))
+			$events = [$events];
 
 		foreach($events as $event) {
 			$eventName = ($event instanceof EventInterface) ? $event->getName() : $event;
@@ -75,7 +85,7 @@ class Dispatcher implements Contract {
 
 		if($event && isset($listens[$event])) {
 			$this->bootEvent($event, (array)$listens[$event]);
-			$this->_booted[$event];
+			$this->_booted[$event] = true;
 			return;
 		}
 
@@ -126,7 +136,7 @@ class Dispatcher implements Contract {
 		}
 	}
 
-	protected function isDisabled($event = '') {
+	protected function isDisabled($event = null) {
 		list($namespace, $hook) = explode('.', $event);
 
 		if(!$event) {
