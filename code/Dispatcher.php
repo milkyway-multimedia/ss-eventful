@@ -17,6 +17,7 @@ class Dispatcher implements Contract {
 	protected $configKey = 'Eventful';
 
     private $_booted = [];
+	private $_namespaced = [];
 	private $_allBooted = false;
 
     public function __construct(EmitterInterface $emitter, $configKey = 'Eventful') {
@@ -83,9 +84,11 @@ class Dispatcher implements Contract {
 
 		$listens = (array) $this->config()->listeners;
 
-		if($event && isset($listens[$event])) {
-			$this->bootEvent($event, (array)$listens[$event]);
-			$this->_booted[$event] = true;
+		if($event) {
+			$events = $this->getAllNamespacedEvents($event);
+
+			if(($listens = array_intersect_key($listens, array_flip($events['events']))) && !empty($listens))
+				$this->bootEvent($event, $listens);
 			return;
 		}
 
@@ -101,52 +104,118 @@ class Dispatcher implements Contract {
 	}
 
 	protected function bootEvent($event, $listeners = []) {
+		$events = $this->getAllNamespacedEvents($event);
+
 		foreach($listeners as $listener => $options) {
-			$once = false;
-			$priority = EmitterInterface::P_LOW;
-
-			if (is_array($options)) {
-				$once  = isset($options['first_time_only']);
-
-				if (isset($options['class'])) {
-					$listener = $options['class'];
-				}
-
-				if (isset($options['priority'])) {
-					$priority = $options['priority'];
-				}
+			foreach($events as $event) {
+				$this->addListenerForEvent($event, $listener, $options);
 			}
-			else {
-				$listener = $options;
-			}
-
-			$listenerClass = is_array($listener) ? array_shift($listener) : $listener;
-
-			if(in_array($listenerClass, (array)$this->config()->disabled_listeners))
-				continue;
-
-			if (is_array($listener)) {
-				$listener = [\Injector::inst()->create($listenerClass)] + $listener;
-			}
-			else {
-				$listener = \Injector::inst()->create($listener);
-			}
-
-			$this->listen($event, $listener, $once, $priority);
 		}
 	}
 
-	protected function isDisabled($event = null) {
-		list($namespace, $hook) = explode('.', $event);
+	protected function addListenerForEvent($event, $listener, $options) {
+		$once = false;
+		$priority = EmitterInterface::P_LOW;
 
-		if(!$event) {
-			$hook = $namespace;
-			$namespace = '';
+		if (is_array($options)) {
+			$once  = isset($options['first_time_only']);
+
+			if (isset($options['class'])) {
+				$listener = $options['class'];
+			}
+
+			if (isset($options['priority'])) {
+				$priority = $options['priority'];
+			}
+		}
+		else {
+			$listener = $options;
 		}
 
+		$listenerClass = is_array($listener) ? array_shift($listener) : $listener;
+
+		if(in_array($listenerClass, (array)$this->config()->disabled_listeners)) {
+			$this->_booted[$event] = true;
+			return;
+		}
+
+		if (is_array($listener)) {
+			$listener = [\Injector::inst()->create($listenerClass)] + $listener;
+		}
+		else {
+			$listener = \Injector::inst()->create($listener);
+		}
+
+		$this->listen($event, $listener, $once, $priority);
+
+		$this->_booted[$event] = true;
+	}
+
+	protected function isDisabled($event = null) {
+		$events = $this->getAllNamespacedEvents($event);
+
 		return !$event
-		|| ($namespace && in_array($namespace, (array)$this->config()->disabled_namespaces))
-		|| (in_array($event, (array)$this->config()->disabled_events))
-		|| (in_array($hook, (array)$this->config()->disabled_hooks));
+		|| in_array($event, (array)$this->config()->disabled_fully_qualified_events)
+		|| array_intersect($events['namespaces'], (array)$this->config()->disabled_namespaces)
+		|| array_intersect($events['events'], (array)$this->config()->disabled_hooks);
+	}
+
+	protected function getAllNamespacedEvents($event) {
+		if(isset($this->_namespaced[$event]))
+			return $this->_namespaced[$event];
+
+		$namespaces = explode('.', $event);
+		$hook = array_shift($namespaces);
+
+		$this->_namespaced[$event]['events'] = [$event];
+
+		if($hook != $event)
+			$this->_namespaced[$event]['events'][] = $hook;
+
+		if(count($namespaces)) {
+			$this->_namespaced[$event]['namespaces'] = array_map(function($value) {
+				return $this->permuteArray($value);
+			}, $this->getUniqueCombinations($namespaces));
+
+			$this->_namespaced[$event]['events'] = array_merge($this->_namespaced[$event]['events'],
+				array_unique(array_map(function($value) use($hook) {
+				return $hook . implode('.', $value);
+			}, $this->_namespaced[$event]['namespaces'])));
+		}
+		else {
+			$this->_namespaced[$event]['namespaces'] = [];
+		}
+
+		return $this->_namespaced[$event];
+	}
+
+	protected function getUniqueCombinations($array) {
+		// initialize by adding the empty set
+		$results = [[array_pop($array)]];
+
+		foreach ($array as $element) {
+			foreach ($results as $combination)
+				$results[] = array_merge([$element], $combination);
+		}
+
+		return $results;
+	}
+
+	protected function permuteArray($items, $perms = []) {
+		$results = [];
+
+		if (empty($items)) {
+			$results[] = $perms;
+		} else {
+			for ($i = count($items) - 1; $i >= 0; --$i) {
+				$newItems = $items;
+				$newPerms = $perms;
+				list($foo) = array_splice($newItems, $i, 1);
+				array_unshift($newPerms, $foo);
+				$results = array_merge($results, $this->permuteArray($newItems, $newPerms));
+			}
+		}
+
+		return $results;
 	}
 } 
