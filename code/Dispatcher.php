@@ -34,7 +34,13 @@ class Dispatcher implements Contract {
 				$eventListener = $listener;
 			else {
 				$listenerFn = explode('.',$event);
-				$listenerFn = array_pop($listenerFn);
+				$listenerFn = array_shift($listenerFn);
+
+				if(strpos(':', $event)) {
+					$listenerFn = explode(':',$event);
+					$listenerFn = array_pop($listenerFn);
+				}
+
 				$eventListener = [$listener, $listenerFn];
 			}
 
