@@ -36,8 +36,8 @@ class Dispatcher implements Contract {
 				$listenerFn = explode('.',$event);
 				$listenerFn = array_shift($listenerFn);
 
-				if(strpos(':', $event)) {
-					$listenerFn = explode(':',$event);
+				if(strpos($listenerFn, ':') !== false) {
+					$listenerFn = explode(':',$listenerFn);
 					$listenerFn = array_pop($listenerFn);
 				}
 
@@ -93,8 +93,21 @@ class Dispatcher implements Contract {
 		if($event) {
 			$events = $this->getAllNamespacedEvents($event);
 
-			if(($listens = array_intersect_key($listens, array_flip($events['events']))) && !empty($listens))
-				$this->bootEvent($event, $listens);
+			array_walk($listens, function($listener, $event) use($events) {
+				if(isset($events['events'][$event])) {
+					$this->bootEvent($event, $listener);
+					return;
+				}
+
+				$myEvents = explode('.', $event);
+
+				if(in_array($myEvents[0], $events['events'])) {
+					$this->bootEvent($event, $listener);
+					return;
+				}
+			});
+//			if(($listens = array_intersect_key($listens, array_flip($events['events']))) && !empty($listens))
+//				$this->bootEvent($event, $listens);
 			return;
 		}
 
@@ -113,7 +126,7 @@ class Dispatcher implements Contract {
 		$events = $this->getAllNamespacedEvents($event);
 
 		foreach($listeners as $listener => $options) {
-			foreach($events as $event) {
+			foreach($events['events'] as $event) {
 				$this->addListenerForEvent($event, $listener, $options);
 			}
 		}
@@ -154,7 +167,8 @@ class Dispatcher implements Contract {
 
 		$this->listen($event, $listener, $once, $priority);
 
-		$this->_booted[$event] = true;
+		foreach((array)$event as $e)
+			$this->_booted[$e] = true;
 	}
 
 	protected function isDisabled($event = null) {
@@ -179,13 +193,14 @@ class Dispatcher implements Contract {
 			$this->_namespaced[$event]['events'][] = $hook;
 
 		if(count($namespaces)) {
-			$this->_namespaced[$event]['namespaces'] = array_map(function($value) {
+			$this->_namespaced[$event]['namespaces'] = array_unique(array_map(function($value) {
 				return $this->permuteArray($value);
-			}, $this->getUniqueCombinations($namespaces));
+//				return $value;
+			}, $this->getUniqueCombinations($namespaces)));
 
-			$this->_namespaced[$event]['events'] = array_merge($this->_namespaced[$event]['events'],
-				array_unique(array_map(function($value) use($hook) {
-				return $hook . implode('.', $value);
+			$this->_namespaced[$event]['events'] = array_unique(array_merge($this->_namespaced[$event]['events'],
+				array_map(function($value) use($hook) {
+				return $hook . '.' . implode('.', array_pop($value));
 			}, $this->_namespaced[$event]['namespaces'])));
 		}
 		else {
