@@ -1,28 +1,31 @@
 {
-	"name"       : "milkyway-multimedia/ss-eventful",
-	"description": "A simple events dispatcher for Silverstripe, with events that can be started via YAML config",
-	"type"       : "silverstripe-module",
-	"keywords"   : [
-		"silverstripe",
-		"utilities",
-		"mwm",
-		"events"
-	],
-	"license"    : "MIT",
-	"authors"    : [
-		{
-			"name" : "Mellisa Hankins",
-			"email": "mell@milkywaymultimedia.com.au"
-		}
-	],
-	"require"    : {
-		"silverstripe/framework"            : "~3.1",
-		"league/event": "~2"
-	},
-	"extra"      : {
-		"installer-name": "eventful"
-	},
-	"replace": {
-		"milkyway-multimedia/ss-events-handler": "*"
-	}
+  "name"       : "milkyway-multimedia/ss-eventful",
+  "description": "A simple events dispatcher for Silverstripe, with events that can be edited via YAML config",
+  "type"       : "silverstripe-module",
+  "keywords"   : [
+    "silverstripe",
+    "utilities",
+    "mwm",
+    "events"
+  ],
+  "license"    : "MIT",
+  "authors"    : [
+    {
+      "name" : "Mellisa Hankins",
+      "email": "mell@milkywaymultimedia.com.au"
+    }
+  ],
+  "require"    : {
+    "silverstripe/framework": "~3.1",
+    "league/event"          : "~2"
+  },
+  "extra"      : {
+    "installer-name": "eventful",
+    "branch-alias"  : {
+      "dev-master": "0.2.x-dev"
+    }
+  },
+  "replace"    : {
+    "milkyway-multimedia/ss-events-handler": "self.version"
+  }
 }

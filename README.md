@@ -4,6 +4,11 @@ Silverstripe Eventful
 
 It is pretty much a wrapper around the "league/event" package by thephpleague, so all credit goes to them.
 
+### Features
+- Namespaced Events
+- YML config events
+- Events are lazy loaded
+
 ## Credit
 The League of extraordinary packages - thephpleague.com
 
@@ -22,7 +27,7 @@ Add the following to your composer.json file
 * MIT
 
 ## Version
-* Version 0.1 - Alpha
+* Version 0.2 (Alpha)
 
 ## Contact
 #### Milkyway Multimedia
