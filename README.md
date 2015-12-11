@@ -17,10 +17,16 @@ Add the following to your composer.json file
 
 ```
 
-    "require"          : {
+	"require" : {
 		"milkyway-multimedia/ss-eventful": "dev-master"
 	}
 
+```
+
+or simply run
+
+```
+composer require "milkyway-multimedia/ss-eventful:dev-master"
 ```
 
 ## License
