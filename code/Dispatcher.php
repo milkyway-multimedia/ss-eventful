@@ -267,4 +267,4 @@ class Dispatcher implements Contract
 
         return $results;
     }
-} 
+}
